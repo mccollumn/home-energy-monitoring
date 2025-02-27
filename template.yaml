@@ -21,7 +21,7 @@ Resources:
           RequireNumbers: true
           RequireSymbols: true
           RequireUppercase: true
-  
+
   # Cognito User Pool Client
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
@@ -46,7 +46,7 @@ Resources:
         AllowMethods: "'OPTIONS, POST, GET'"
         AllowHeaders: "'Content-Type'"
         AllowOrigin: "'*'" #DO NOT USE THIS VALUE IN PRODUCTION - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html
-        
+
   # Authentication Lambda function for signup
   SignupFunction:
     Type: AWS::Serverless::Function
@@ -197,6 +197,35 @@ Resources:
             RestApiId:
               Ref: ApiGatewayApi
 
+  updateThresholdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/update-threshold.updateThresholdHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A function that updates a user's threshold value in the DynamoDB table
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          # Make DynamoDB endpoint accessible as environment variable from function code during execution
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /alerts
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
+
   # Lambda function config for CSV file processing
   processCSVFunction:
     Type: AWS::Serverless::Function
@@ -285,7 +314,7 @@ Resources:
           - BucketKeyEnabled: true
       VersioningConfiguration:
         Status: Enabled
-          
+
   # This function handles the /energy/upload endpoint to copy files from presigned URLs to CSVUploadBucket
   PostEnergyUploadFunction:
     Type: AWS::Serverless::Function
@@ -406,16 +435,14 @@ Resources:
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
-      Name:
-        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      Name: !Sub "ApplicationInsights-SAM-${AWS::StackName}"
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
   ApplicationInsightsMonitoring:
     Type: AWS::ApplicationInsights::Application
     Properties:
-      ResourceGroupName:
-        Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: "true"
+      ResourceGroupName: !Ref ApplicationResourceGroup
+      AutoConfigurationEnabled: true
 Outputs:
   APIGatewayEndpoint:
     Description: API Gateway endpoint URL for Prod stage
