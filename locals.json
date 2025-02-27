@@ -10,5 +10,9 @@
   "postItemFunction": {
     "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
     "TABLE": "Users"
+  },
+  "postEnergyInputFunction": {
+    "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
+    "TABLE": "Users"
   }
 }

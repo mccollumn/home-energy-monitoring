@@ -169,6 +169,38 @@ Resources:
         Name: id
         Type: String
 
+  # Lambda function config for energy input POST endpoint
+  postEnergyInputFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/post-energy-input.postEnergyInputHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description:
+        A Lambda function to handle POST requests for energy input data
+        and store it in a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          # Make DynamoDB endpoint accessible as environment variable from function code during execution
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /energy/input
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
+
   # S3 Bucket for CSV file uploads
   CSVUploadBucket:
     Type: AWS::S3::Bucket

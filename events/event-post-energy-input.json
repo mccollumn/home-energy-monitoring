@@ -1,0 +1,4 @@
+{
+  "httpMethod": "POST",
+  "body": "{\"date\": \"2024-06-10\",\"usage\": 25.5}"
+}
