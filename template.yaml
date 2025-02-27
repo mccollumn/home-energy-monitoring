@@ -285,6 +285,35 @@ Resources:
           - BucketKeyEnabled: true
       VersioningConfiguration:
         Status: Enabled
+          
+  # This function handles the /energy/upload endpoint to copy files from presigned URLs to CSVUploadBucket
+  PostEnergyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/post-energy-upload.postEnergyUploadHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 30
+      Description: Lambda function that copies files from presigned URLs to CSVUploadBucket
+      Policies:
+        # Give Write permissions to S3 bucket
+        - S3WritePolicy:
+            BucketName: !Ref CSVUploadBucket
+      Environment:
+        Variables:
+          # Make bucket name accessible as environment variable
+          CSV_BUCKET: !Ref CSVUploadBucket
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /energy/upload
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
 
   # S3 Bucket to host single page app website
   WebSiteBucket:

@@ -1,0 +1,4 @@
+{
+  "httpMethod": "POST",
+  "body": "{\"presignedUrl\": \"https://example-bucket.s3.amazonaws.com/sample.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...\"}"
+}

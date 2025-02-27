@@ -149,7 +149,7 @@ docker inspect <container_name_or_id> -f  '{{range .NetworkSettings.Networks}}{{
         "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
         "TABLE": "SampleTable"
     },
-    "putItemFunction": {
+    "postItemFunction": {
         "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
         "TABLE": "SampleTable"
     }
