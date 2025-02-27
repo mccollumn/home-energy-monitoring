@@ -1,0 +1,4 @@
+{
+    "httpMethod": "POST",
+    "body": "{\"username\": \"newuser\", \"password\": \"Password123!\", \"email\": \"newuser@example.com\"}"
+}

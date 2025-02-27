@@ -14,5 +14,13 @@
   "postEnergyInputFunction": {
     "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
     "TABLE": "Users"
+  },
+  "SignupFunction": {
+    "USER_POOL_ID": "XXXXXXXXXXXXXXXXXXX",
+    "USER_POOL_CLIENT_ID": "XXXXXXXXXXXXXXXXXXX"
+  },
+  "LoginFunction": {
+    "USER_POOL_ID": "XXXXXXXXXXXXXXXXXXX",
+    "USER_POOL_CLIENT_ID": "XXXXXXXXXXXXXXXXXXX"
   }
 }
