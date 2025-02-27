@@ -1,0 +1,11 @@
+{
+  "httpMethod": "POST",
+  "body": "{\"threshold\": 30}",
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "user123"
+      }
+    }
+  }
+}
