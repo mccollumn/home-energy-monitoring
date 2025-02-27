@@ -1,0 +1,303 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  home-energy-monitoring
+Transform:
+  - AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is an API gateway associated with the getByIdFunction and postItemFunctions
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'OPTIONS, POST, GET'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'" #DO NOT USE THIS VALUE IN PRODUCTION - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html
+
+  # This is a Lambda function config associated with the source code: get-by-id.js
+  getAllItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/get-all-items.getAllItemsHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description:
+        A simple example includes a HTTP get method to get all items by
+        id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE: !Ref Table
+          # Make DynamoDB endpoint accessible as environment variable from function code during execution
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: get-by-id.js
+  getByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/get-by-id.getByIdHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description:
+        A simple example includes a HTTP get method to get one item by
+        id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE: !Ref Table
+          # Make DynamoDB endpoint accessible as environment variable from function code during execution
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /{id}
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: post-item.js
+  postItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/post-item.postItemHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description:
+        A simple example includes a HTTP post method to add one item to
+        a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          # Make DynamoDB endpoint accessible as environment variable from function code during execution
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  # Lambda function config for CSV file processing
+  processCSVFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/process-csv.processCSVHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 120
+      Description: Lambda function that processes CSV files uploaded to S3
+      Policies:
+        # Give Read permissions to S3
+        - S3ReadPolicy:
+            BucketName: !Ref CSVUploadBucket
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE: !Ref Table
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref CSVUploadBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .csv
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+  # DynamoDB table to store item: {id: <ID>, name: <NAME>}
+  Table:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: !Sub "${AWS::StackName}-users"
+      PrimaryKey:
+        Name: id
+        Type: String
+
+  # S3 Bucket for CSV file uploads
+  CSVUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  # S3 Bucket to host single page app website
+  WebSiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  WebSiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebSiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${WebSiteBucket}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+
+  # CloudFront Distribution for hosting the single page app website
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt WebSiteBucket.RegionalDomainName
+            Id: myS3Origin
+            OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          CachedMethods:
+            - GET
+            - HEAD
+          TargetOriginId: myS3Origin
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: allow-all
+          MinTTL: 0
+          DefaultTTL: 3600
+          MaxTTL: 86400
+        PriceClass: PriceClass_200
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: whitelist
+            Locations:
+              - US
+              - CA
+              - GB
+              - DE
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${WebSiteBucket} OAC"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
+Outputs:
+  APIGatewayEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  CloudFrontDistributionId:
+    Description: CloudFront Distribution ID for hosting web front end
+    Value: !Ref CloudFrontDistribution
+  CloudFrontDistributionDomainName:
+    Description: CloudFront Distribution Domain Name for accessing web front end
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  WebS3BucketName:
+    Description: S3 Bucket for hosting web frontend
+    Value: !Ref WebSiteBucket
+  CSVUploadBucketName:
+    Description: S3 Bucket for CSV file uploads
+    Value: !Ref CSVUploadBucket
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    LoggingConfig:
+      LogFormat: JSON

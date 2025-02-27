@@ -1,0 +1,14 @@
+{
+  "getAllItemsFunction": {
+    "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
+    "TABLE": "Users"
+  },
+  "getByIdFunction": {
+    "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
+    "TABLE": "Users"
+  },
+  "postItemFunction": {
+    "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
+    "TABLE": "Users"
+  }
+}

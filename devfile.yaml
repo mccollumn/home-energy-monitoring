@@ -1,0 +1,25 @@
+schemaVersion: 2.0.0
+
+components:
+  - name: dev
+    container:
+      image: public.ecr.aws/aws-mde/universal-image:latest
+
+commands:
+  - id: install
+    exec:
+      component: dev
+      commandLine: "cd backend && npm install && cd ../frontend && npm install"
+      workingDir: ${PROJECT_SOURCE}
+
+  - id: build
+    exec:
+      component: dev
+      commandLine: "cd frontend && npm run build"
+      workingDir: ${PROJECT_SOURCE}
+
+  - id: test
+    exec:
+      component: dev
+      commandLine: "cd backend && npm run test && cd ../frontend && npm run test"
+      workingDir: ${PROJECT_SOURCE}
