@@ -1,15 +1,11 @@
-// Create clients and set shared const values outside of the handler.
-
-// Import required AWS SDK clients
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import {
   TimestreamWriteClient,
   WriteRecordsCommand,
 } from "@aws-sdk/client-timestream-write";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import { Readable } from "stream";
 
 // Initialize S3 client
 const s3Client = new S3Client({});
@@ -65,7 +61,9 @@ const parseCSV = (csvData) => {
 };
 
 /**
- * Lambda function that processes a CSV file uploaded to S3
+ * Lambda function that processes a CSV file uploaded to S3 and writes the data to Timestream.
+ * @param {Object} event - S3 event that triggered the Lambda function
+ * @returns {Object} response - The response object containing a status code and message
  */
 export const processCSVHandler = async (event) => {
   console.info("Received event:", JSON.stringify(event, null, 2));
@@ -92,7 +90,6 @@ export const processCSVHandler = async (event) => {
     const items = parseCSV(fileContent);
     console.info(`Parsed ${items.length} items from CSV file`);
 
-    // Add an ID to each item and store in DynamoDB
     for (const item of items) {
       // Extract user ID from file metadata or S3 event
       // Since the user ID isn't in the key, extract it from the filename itself
@@ -105,15 +102,6 @@ export const processCSVHandler = async (event) => {
 
       // Set the user ID as the item ID
       item.id = userId;
-
-      // Save to DynamoDB
-      const params = {
-        TableName: tableName,
-        Item: item,
-      };
-
-      await ddbDocClient.send(new PutCommand(params));
-      console.info(`Saved item with id ${item.id} to DynamoDB`);
 
       // Check if the user has a threshold set and compare with current usage
       try {
@@ -163,7 +151,7 @@ export const processCSVHandler = async (event) => {
           "Error checking threshold or sending notification:",
           thresholdErr
         );
-        // Continue with the flow, don't fail the request if threshold check fails
+        // Don't fail the request if threshold check fails
       }
 
       // Prepare and write data to Timestream
@@ -209,7 +197,8 @@ export const processCSVHandler = async (event) => {
         console.error("Error code:", timestreamErr.code);
         console.error("Error name:", timestreamErr.name);
         console.error("Error stack:", timestreamErr.stack);
-        // Log error but don't fail the request if only Timestream write fails
+
+        throw timestreamErr;
       }
     }
 

@@ -1,4 +1,11 @@
 {
   "httpMethod": "POST",
-  "body": "{\"date\": \"2024-06-10\",\"usage\": 25.5}"
+  "body": "{\"date\": \"2024-06-10\",\"usage\": 25.5}",
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "testuser"
+      }
+    }
+  }
 }

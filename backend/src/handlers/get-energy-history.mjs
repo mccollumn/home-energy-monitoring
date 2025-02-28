@@ -1,28 +1,18 @@
-// Create clients and set shared const values outside of the handler.
-
-// Create a DocumentClient that represents the query to add an item
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  TimestreamQueryClient,
+  QueryCommand,
+} from "@aws-sdk/client-timestream-query";
 import moment from "moment";
 
-//DynamoDB Endpoint
-const ENDPOINT_OVERRIDE = process.env.ENDPOINT_OVERRIDE;
-let ddbClient = undefined;
+// Timestream client
+const timestreamClient = new TimestreamQueryClient({});
 
-if (ENDPOINT_OVERRIDE) {
-  ddbClient = new DynamoDBClient({ endpoint: ENDPOINT_OVERRIDE });
-} else {
-  ddbClient = new DynamoDBClient({}); // Use default values for DynamoDB endpoint
-  console.warn(
-    "No value for ENDPOINT_OVERRIDE provided for DynamoDB, using default"
-  );
-}
+// Get the Timestream database and table name from environment variables
+const timestreamDatabaseName = process.env.TIMESTREAM_DATABASE_NAME;
+const timestreamTableName = process.env.TIMESTREAM_TABLE_NAME;
 
-const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
-
-// Get the DynamoDB table name from environment variables
-const tableName = process.env.TABLE;
-console.info("Using DynamoDB table: ", tableName);
+console.info("Using Timestream database: ", timestreamDatabaseName);
+console.info("Using Timestream table: ", timestreamTableName);
 
 // Function for validation of date format
 function isValidDate(dateString, format) {
@@ -82,22 +72,55 @@ export const getEnergyHistoryHandler = async (event) => {
       };
     }
 
-    // Query DynamoDB to get items within the date range
+    // Query Timestream to get items within the date range
+    const query = `
+      SELECT time, date, measure_value::double AS usage 
+      FROM "${timestreamDatabaseName}"."${timestreamTableName}" 
+      WHERE id = '${userId}' 
+        AND date BETWEEN '${startDate}' AND '${endDate}'
+        AND measure_name = 'energy_usage'
+      ORDER BY date ASC
+    `;
+
+    console.info("Executing Timestream query:", query);
+
     const params = {
-      TableName: tableName,
-      KeyConditionExpression:
-        "id = :userId AND #date BETWEEN :startDate AND :endDate",
-      ExpressionAttributeNames: {
-        "#date": "date",
-      },
-      ExpressionAttributeValues: {
-        ":userId": userId,
-        ":startDate": startDate,
-        ":endDate": endDate,
-      },
+      QueryString: query,
     };
 
-    const queryResult = await ddbDocClient.send(new QueryCommand(params));
+    const queryResult = await timestreamClient.send(new QueryCommand(params));
+
+    // Process Timestream query results
+    const processedResults = [];
+
+    if (queryResult.Rows && queryResult.Rows.length > 0) {
+      // Get column names from the QueryResult
+      const columnNames = queryResult.ColumnInfo.map((column) => column.Name);
+
+      // Process each row
+      queryResult.Rows.forEach((row) => {
+        const item = {};
+
+        // Map each data value to its column name
+        row.Data.forEach((data, index) => {
+          // Check if the column exists
+          if (index < columnNames.length) {
+            const columnName = columnNames[index];
+            // Extract the actual value (Timestream returns different data types)
+            item[columnName] = data.ScalarValue || null;
+          }
+        });
+
+        // Format the item to match the expected structure
+        // Ensure we have an object with date, and usage properties
+        const formattedItem = {
+          date: item.date,
+          usage: parseFloat(item.usage),
+        };
+
+        processedResults.push(formattedItem);
+      });
+    }
 
     // Return the result
     return {
@@ -106,7 +129,7 @@ export const getEnergyHistoryHandler = async (event) => {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials": true,
       },
-      body: JSON.stringify(queryResult.Items),
+      body: JSON.stringify(processedResults),
     };
   } catch (error) {
     console.error("Error in getEnergyHistoryHandler:", error);

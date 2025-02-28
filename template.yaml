@@ -287,15 +287,19 @@ Resources:
         - x86_64
       MemorySize: 128
       Timeout: 100
-      Description: A simple function that retrieves energy usage history for a date range
+      Description: Retrieves energy usage history for a date range
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
+        # Give Read Permissions to Timestream
+        - Statement:
+            - Effect: Allow
+              Action:
+                - timestream:ReadRecords
+                - timestream:DescribeEndpoints
+              Resource: !GetAtt EnergyTimestreamTable.Arn
       Environment:
         Variables:
-          # Make table name accessible as environment variable from function code during execution
-          TABLE: !Ref Table
+          TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
+          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
       Events:
         Api:
           Type: Api
@@ -304,25 +308,19 @@ Resources:
             Method: GET
             RestApiId:
               Ref: ApiGatewayApi
-            Auth:
-              Authorizer: CognitoAuthorizer
 
-  # DynamoDB table for storing energy usage data
+  # DynamoDB table for storing daily usage thresholds by user ID
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "${AWS::StackName}-EnergyUsageDB"
+      TableName: !Sub "${AWS::StackName}-ThresholdsDB"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
-        - AttributeName: date
-          AttributeType: S
       KeySchema:
         - AttributeName: id
           KeyType: HASH
-        - AttributeName: date
-          KeyType: RANGE
 
   # Timestream database for storing energy usage metrics
   EnergyTimestreamDatabase:
