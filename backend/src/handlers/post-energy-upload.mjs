@@ -1,12 +1,4 @@
-// Create clients and set shared const values outside of the handler.
-
-// Import required AWS SDK clients
-import {
-  S3Client,
-  GetObjectCommand,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 
 // Initialize S3 client
@@ -17,7 +9,10 @@ const csvBucket = process.env.CSV_BUCKET;
 console.info("Using S3 bucket: ", csvBucket);
 
 /**
- * A function that accepts a pre-signed S3 URL and copies the file to CSVUploadBucket
+ * Accepts a pre-signed S3 URL and copies the file to CSVUploadBucket
+ * @param {Object} event - The event object containing information about the incoming request.
+ * @returns {Object} - An object containing the response status code, headers, and body.
+ * @throws {Error} When an error is encountered
  */
 export const postEnergyUploadHandler = async (event) => {
   if (event.httpMethod !== "POST") {

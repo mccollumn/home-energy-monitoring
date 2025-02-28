@@ -61,9 +61,10 @@ const parseCSV = (csvData) => {
 };
 
 /**
- * Lambda function that processes a CSV file uploaded to S3 and writes the data to Timestream.
+ * Processes a CSV file uploaded to S3 and writes the data to Timestream.
  * @param {Object} event - S3 event that triggered the Lambda function
  * @returns {Object} response - The response object containing a status code and message
+ * @throws {Error} When an error is encountered
  */
 export const processCSVHandler = async (event) => {
   console.info("Received event:", JSON.stringify(event, null, 2));

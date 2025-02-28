@@ -1,6 +1,3 @@
-// Create clients and set shared const values outside of the handler.
-
-// Create a DocumentClient that represents the query to add an item
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
@@ -24,7 +21,10 @@ const tableName = process.env.TABLE;
 console.info("Using DynamoDB table: ", tableName);
 
 /**
- * A simple example includes a HTTP get method to get all items from a DynamoDB table.
+ * Get all items from the DynamoDB table. Used for dev and testing.
+ * @param {Object} event - The event object containing information about the incoming request.
+ * @returns {Object} - An object containing the response status code, headers, and body.
+ * @throws {Error} When an error is encountered
  */
 export const getAllItemsHandler = async (event) => {
   if (event.httpMethod !== "GET") {
@@ -35,10 +35,7 @@ export const getAllItemsHandler = async (event) => {
   // All log statements are written to CloudWatch
   console.info("received:", event);
 
-  // get all items from the table (only first 1MB data, you can use `LastEvaluatedKey` to get the rest of data)
-  // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#scan-property
-  // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html
-  var params = {
+  const params = {
     TableName: tableName,
   };
 

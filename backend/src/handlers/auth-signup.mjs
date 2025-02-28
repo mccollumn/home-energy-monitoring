@@ -1,5 +1,7 @@
-// Create clients and set shared const values outside of the handler.
-import { CognitoIdentityProviderClient, SignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
+import {
+  CognitoIdentityProviderClient,
+  SignUpCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 
 // Create a Cognito Identity Provider client
 const client = new CognitoIdentityProviderClient({});
@@ -9,7 +11,10 @@ const userPoolId = process.env.USER_POOL_ID;
 const clientId = process.env.USER_POOL_CLIENT_ID;
 
 /**
- * A simple function that handles user signup using Cognito
+ * Handle user signup using Cognito
+ * @param {object} event - HTTP request from API Gateway
+ * @returns {object} HTTP response with status code and body
+ * @throws {Error} When an error is encountered
  */
 export const signupHandler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -17,7 +22,7 @@ export const signupHandler = async (event) => {
       `signup only accepts POST method, you tried: ${event.httpMethod}`
     );
   }
-  
+
   // All log statements are written to CloudWatch
   console.info("received signup request:", event);
 
@@ -31,11 +36,11 @@ export const signupHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
-        error: "Invalid request body"
-      })
+        error: "Invalid request body",
+      }),
     };
   }
 
@@ -47,11 +52,11 @@ export const signupHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
-        error: "Username, password, and email are required"
-      })
+        error: "Username, password, and email are required",
+      }),
     };
   }
 
@@ -64,9 +69,9 @@ export const signupHandler = async (event) => {
       UserAttributes: [
         {
           Name: "email",
-          Value: email
-        }
-      ]
+          Value: email,
+        },
+      ],
     });
 
     // Execute the command
@@ -77,14 +82,14 @@ export const signupHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
         message: "User registration successful",
         username: username,
         userConfirmed: response.UserConfirmed,
-        userSub: response.UserSub
-      })
+        userSub: response.UserSub,
+      }),
     };
   } catch (error) {
     console.error("Error signing up user:", error);
@@ -94,11 +99,11 @@ export const signupHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
-        error: error.message || "An error occurred during user registration"
-      })
+        error: error.message || "An error occurred during user registration",
+      }),
     };
   }
 };

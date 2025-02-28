@@ -20,7 +20,10 @@ function isValidDate(dateString, format) {
 }
 
 /**
- * A function to get energy usage history for a specific date range.
+ * Get energy usage history for a specific date range
+ * @param {Object} event - The event object containing information about the incoming request.
+ * @returns {Object} - An object containing the response status code, headers, and body.
+ * @throws {Error} When an error is encountered
  */
 export const getEnergyHistoryHandler = async (event) => {
   if (event.httpMethod !== "GET") {
@@ -32,7 +35,7 @@ export const getEnergyHistoryHandler = async (event) => {
   console.info("received:", event);
 
   try {
-    // Parse userId from the request - this would come from authentication context in a real app
+    // Parse userId from the request authentication context
     const userId = event.requestContext.authorizer?.claims?.sub || "testuser"; // fallback for testing
 
     // Get query parameters for date range

@@ -1,5 +1,7 @@
-// Create clients and set shared const values outside of the handler.
-import { CognitoIdentityProviderClient, InitiateAuthCommand } from "@aws-sdk/client-cognito-identity-provider";
+import {
+  CognitoIdentityProviderClient,
+  InitiateAuthCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 
 // Create a Cognito Identity Provider client
 const client = new CognitoIdentityProviderClient({});
@@ -9,7 +11,10 @@ const userPoolId = process.env.USER_POOL_ID;
 const clientId = process.env.USER_POOL_CLIENT_ID;
 
 /**
- * A simple function that handles user login using Cognito
+ * Handle user login using Cognito
+ * @param {object} event - HTTP request from API Gateway
+ * @returns {object} HTTP response with status code and body
+ * @throws {Error} When an error is encountered
  */
 export const loginHandler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -17,7 +22,7 @@ export const loginHandler = async (event) => {
       `login only accepts POST method, you tried: ${event.httpMethod}`
     );
   }
-  
+
   // All log statements are written to CloudWatch
   console.info("received login request:", event);
 
@@ -31,11 +36,11 @@ export const loginHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
-        error: "Invalid request body"
-      })
+        error: "Invalid request body",
+      }),
     };
   }
 
@@ -47,11 +52,11 @@ export const loginHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
-        error: "Username and password are required"
-      })
+        error: "Username and password are required",
+      }),
     };
   }
 
@@ -62,8 +67,8 @@ export const loginHandler = async (event) => {
       ClientId: clientId,
       AuthParameters: {
         USERNAME: username,
-        PASSWORD: password
-      }
+        PASSWORD: password,
+      },
     });
 
     // Execute the command
@@ -74,15 +79,15 @@ export const loginHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
         message: "Login successful",
         idToken: response.AuthenticationResult.IdToken,
         accessToken: response.AuthenticationResult.AccessToken,
         refreshToken: response.AuthenticationResult.RefreshToken,
-        expiresIn: response.AuthenticationResult.ExpiresIn
-      })
+        expiresIn: response.AuthenticationResult.ExpiresIn,
+      }),
     };
   } catch (error) {
     console.error("Error logging in user:", error);
@@ -92,11 +97,11 @@ export const loginHandler = async (event) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "OPTIONS, POST",
-        "Access-Control-Allow-Headers": "Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type",
       },
       body: JSON.stringify({
-        error: error.message || "An error occurred during login"
-      })
+        error: error.message || "An error occurred during login",
+      }),
     };
   }
 };

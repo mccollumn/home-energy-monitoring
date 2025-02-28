@@ -1,6 +1,3 @@
-// Create clients and set shared const values outside of the handler.
-
-// Create a DocumentClient that represents the query to update an item
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
@@ -24,7 +21,10 @@ const tableName = process.env.TABLE;
 console.info("Using DynamoDB table: ", tableName);
 
 /**
- * A function that updates a user's threshold value in the DynamoDB table.
+ * Updates a user's threshold value in the DynamoDB table.
+ * @param {Object} event - The event object containing information about the incoming request.
+ * @returns {Object} - An object containing the response status code, headers, and body.
+ * @throws {Error} When an error is encountered
  */
 export const updateThresholdHandler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -38,11 +38,10 @@ export const updateThresholdHandler = async (event) => {
   // Get threshold from the body of the request
   const body = JSON.parse(event.body);
   const threshold = body.threshold;
-  
+
   // Get user ID from the request context (from Cognito authorizer)
-  // Assuming the user ID is passed in the request context after authentication
   const userId = event.requestContext.authorizer?.claims?.sub;
-  
+
   if (!userId) {
     return {
       statusCode: 401,
@@ -63,7 +62,9 @@ export const updateThresholdHandler = async (event) => {
         "Access-Control-Allow-Methods": "OPTIONS, POST",
         "Access-Control-Allow-Headers": "Content-Type",
       },
-      body: JSON.stringify({ message: "Missing threshold value in request body" }),
+      body: JSON.stringify({
+        message: "Missing threshold value in request body",
+      }),
     };
   }
 
@@ -73,15 +74,15 @@ export const updateThresholdHandler = async (event) => {
     Key: { id: userId },
     UpdateExpression: "SET threshold = :thresholdValue",
     ExpressionAttributeValues: {
-      ":thresholdValue": threshold
+      ":thresholdValue": threshold,
     },
-    ReturnValues: "UPDATED_NEW"
+    ReturnValues: "UPDATED_NEW",
   };
 
   try {
     const data = await ddbDocClient.send(new UpdateCommand(params));
     console.log("Success - threshold updated", data);
-    
+
     return {
       statusCode: 200,
       headers: {
@@ -91,7 +92,7 @@ export const updateThresholdHandler = async (event) => {
       },
       body: JSON.stringify({
         message: "Threshold updated successfully",
-        updatedAttributes: data.Attributes
+        updatedAttributes: data.Attributes,
       }),
     };
   } catch (err) {
@@ -109,7 +110,7 @@ export const updateThresholdHandler = async (event) => {
       },
       body: JSON.stringify({
         message: "Error updating threshold",
-        error: err.message
+        error: err.message,
       }),
     };
   }

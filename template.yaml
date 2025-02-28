@@ -4,8 +4,6 @@ Description: >-
 Transform:
   - AWS::Serverless-2016-10-31
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
   # Cognito User Pool for authentication
   CognitoUserPool:
@@ -34,10 +32,7 @@ Resources:
       GenerateSecret: false
       PreventUserExistenceErrors: ENABLED
 
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is an API gateway associated with the getByIdFunction and postItemFunctions
+  # API Gateway
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -46,268 +41,6 @@ Resources:
         AllowMethods: "'OPTIONS, POST, GET'"
         AllowHeaders: "'Content-Type'"
         AllowOrigin: "'*'" #DO NOT USE THIS VALUE IN PRODUCTION - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html
-
-  # Authentication Lambda function for signup
-  SignupFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/auth-signup.signupHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A function that handles user signup using Cognito
-      Environment:
-        Variables:
-          USER_POOL_ID: !Ref CognitoUserPool
-          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /auth/signup
-            Method: POST
-            RestApiId: !Ref ApiGatewayApi
-
-  # Authentication Lambda function for login
-  LoginFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/auth-login.loginHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A function that handles user login using Cognito
-      Environment:
-        Variables:
-          USER_POOL_ID: !Ref CognitoUserPool
-          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /auth/login
-            Method: POST
-            RestApiId: !Ref ApiGatewayApi
-
-  # This is a Lambda function config associated with the source code: get-by-id.js
-  getAllItemsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/get-all-items.getAllItemsHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description:
-        A simple example includes a HTTP get method to get all items by
-        id from a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          TABLE: !Ref Table
-          # Make DynamoDB endpoint accessible as environment variable from function code during execution
-          ENDPOINT_OVERRIDE: ""
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: get-by-id.js
-  getByIdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/get-by-id.getByIdHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description:
-        A simple example includes a HTTP get method to get one item by
-        id from a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          TABLE: !Ref Table
-          # Make DynamoDB endpoint accessible as environment variable from function code during execution
-          ENDPOINT_OVERRIDE: ""
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /{id}
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: post-item.js
-  postItemFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/post-item.postItemHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description:
-        A simple example includes a HTTP post method to add one item to
-        a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
-      Environment:
-        Variables:
-          TABLE: !Ref Table
-          # Make DynamoDB endpoint accessible as environment variable from function code during execution
-          ENDPOINT_OVERRIDE: ""
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: POST
-            RestApiId:
-              Ref: ApiGatewayApi
-
-  updateThresholdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/update-threshold.updateThresholdHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A function that updates a user's threshold value in the DynamoDB table
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
-      Environment:
-        Variables:
-          TABLE: !Ref Table
-          # Make DynamoDB endpoint accessible as environment variable from function code during execution
-          ENDPOINT_OVERRIDE: ""
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /alerts
-            Method: POST
-            RestApiId:
-              Ref: ApiGatewayApi
-
-  # Lambda function config for CSV file processing
-  processCSVFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/process-csv.processCSVHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 256
-      Timeout: 120
-      Description: Lambda function that processes CSV files uploaded to S3
-      Policies:
-        # Give Read permissions to S3
-        - S3ReadPolicy:
-            BucketName: !Ref CSVUploadBucket
-        # Give Create/Read/Update/Delete Permissions to the Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
-          # Give Write Permissions to Timestream
-        - Statement:
-            - Effect: Allow
-              Action:
-                - timestream:WriteRecords
-                - timestream:DescribeEndpoints
-              Resource: !GetAtt EnergyTimestreamTable.Arn
-          # Give Publish Permissions to SNS
-        - Statement:
-            - Effect: Allow
-              Action:
-                - sns:Publish
-              Resource: !Ref ThresholdNotificationTopic
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          TABLE: !Ref Table
-          IMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
-          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
-          SNS_TOPIC_ARN: !Ref ThresholdNotificationTopic
-      Events:
-        S3Event:
-          Type: S3
-          Properties:
-            Bucket: !Ref CSVUploadBucket
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: .csv
-
-  GetEnergyHistoryFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/get-energy-history.getEnergyHistoryHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: Retrieves energy usage history for a date range
-      Policies:
-        # Give Read Permissions to Timestream
-        - Statement:
-            - Effect: Allow
-              Action:
-                - timestream:ReadRecords
-                - timestream:DescribeEndpoints
-              Resource: !GetAtt EnergyTimestreamTable.Arn
-      Environment:
-        Variables:
-          TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
-          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /energy/history
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
 
   # DynamoDB table for storing daily usage thresholds by user ID
   Table:
@@ -346,54 +79,6 @@ Resources:
       TopicName: !Sub "${AWS::StackName}-ThresholdNotifications"
       DisplayName: "Energy Usage Threshold Notifications"
 
-  # Lambda function config for energy input POST endpoint
-  postEnergyInputFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/post-energy-input.postEnergyInputHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description:
-        A Lambda function to handle POST requests for energy input data
-        and store it in DynamoDB and Timestream.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the DynamoDB Table
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
-        # Give Write Permissions to Timestream
-        - Statement:
-            - Effect: Allow
-              Action:
-                - timestream:WriteRecords
-                - timestream:DescribeEndpoints
-              Resource: !GetAtt EnergyTimestreamTable.Arn
-        # Give Publish Permissions to SNS
-        - Statement:
-            - Effect: Allow
-              Action:
-                - sns:Publish
-              Resource: !Ref ThresholdNotificationTopic
-      Environment:
-        Variables:
-          TABLE: !Ref Table
-          # Make DynamoDB endpoint accessible as environment variable from function code during execution
-          ENDPOINT_OVERRIDE: ""
-          TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
-          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
-          SNS_TOPIC_ARN: !Ref ThresholdNotificationTopic
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /energy/input
-            Method: POST
-            RestApiId:
-              Ref: ApiGatewayApi
-
   # S3 Bucket for CSV file uploads
   CSVUploadBucket:
     Type: AWS::S3::Bucket
@@ -403,35 +88,6 @@ Resources:
           - BucketKeyEnabled: true
       VersioningConfiguration:
         Status: Enabled
-
-  # This function handles the /energy/upload endpoint to copy files from presigned URLs to CSVUploadBucket
-  PostEnergyUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: src/handlers/post-energy-upload.postEnergyUploadHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      MemorySize: 256
-      Timeout: 30
-      Description: Lambda function that copies files from presigned URLs to CSVUploadBucket
-      Policies:
-        # Give Write permissions to S3 bucket
-        - S3WritePolicy:
-            BucketName: !Ref CSVUploadBucket
-      Environment:
-        Variables:
-          # Make bucket name accessible as environment variable
-          CSV_BUCKET: !Ref CSVUploadBucket
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /energy/upload
-            Method: POST
-            RestApiId:
-              Ref: ApiGatewayApi
 
   # S3 Bucket to host single page app website
   WebSiteBucket:
@@ -532,6 +188,303 @@ Resources:
     Properties:
       ResourceGroupName: !Ref ApplicationResourceGroup
       AutoConfigurationEnabled: true
+
+  ##### Lambda Functions #####
+
+  # Authentication for signup
+  SignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/auth-signup.signupHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Handles user signup using Cognito
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref CognitoUserPool
+          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /auth/signup
+            Method: POST
+            RestApiId: !Ref ApiGatewayApi
+
+  # Authentication for login
+  LoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/auth-login.loginHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Handles user login using Cognito
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref CognitoUserPool
+          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /auth/login
+            Method: POST
+            RestApiId: !Ref ApiGatewayApi
+
+  # Get all DDB items
+  getAllItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/get-all-items.getAllItemsHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Gets all items from the DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  # Get DDB item by user ID
+  getByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/get-by-id.getByIdHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Gets item by user ID from the DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /{id}
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  # Add or update a user's threshold value in the DynamoDB table
+  updateThresholdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/update-threshold.updateThresholdHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Updates a user's threshold value in the DynamoDB table
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /alerts
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  # Processes CSV files uploaded to S3
+  processCSVFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/process-csv.processCSVHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 120
+      Description: Processes CSV files uploaded to S3 and stores data in Timestream
+      Policies:
+        # Give Read permissions to S3
+        - S3ReadPolicy:
+            BucketName: !Ref CSVUploadBucket
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+          # Give Write Permissions to Timestream
+        - Statement:
+            - Effect: Allow
+              Action:
+                - timestream:WriteRecords
+                - timestream:DescribeEndpoints
+              Resource: !GetAtt EnergyTimestreamTable.Arn
+          # Give Publish Permissions to SNS
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref ThresholdNotificationTopic
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          IMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
+          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
+          SNS_TOPIC_ARN: !Ref ThresholdNotificationTopic
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref CSVUploadBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .csv
+
+  # Retrieves energy usage history for a date range
+  GetEnergyHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/get-energy-history.getEnergyHistoryHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Retrieves energy usage history for a date range
+      Policies:
+        # Give Read Permissions to Timestream
+        - Statement:
+            - Effect: Allow
+              Action:
+                - timestream:ReadRecords
+                - timestream:DescribeEndpoints
+              Resource: !GetAtt EnergyTimestreamTable.Arn
+      Environment:
+        Variables:
+          TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
+          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /energy/history
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  # Handles requests for energy input data
+  postEnergyInputFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/post-energy-input.postEnergyInputHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Handles POST requests for energy input data and store it in Timestream.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the DynamoDB Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+        # Give Write Permissions to Timestream
+        - Statement:
+            - Effect: Allow
+              Action:
+                - timestream:WriteRecords
+                - timestream:DescribeEndpoints
+              Resource: !GetAtt EnergyTimestreamTable.Arn
+        # Give Publish Permissions to SNS
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref ThresholdNotificationTopic
+      Environment:
+        Variables:
+          TABLE: !Ref Table
+          ENDPOINT_OVERRIDE: ""
+          TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
+          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
+          SNS_TOPIC_ARN: !Ref ThresholdNotificationTopic
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /energy/input
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
+
+  # Copy files from presigned URLs to CSVUploadBucket
+  PostEnergyUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/post-energy-upload.postEnergyUploadHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 256
+      Timeout: 30
+      Description: Copies files from presigned URLs to CSVUploadBucket
+      Policies:
+        # Give Write permissions to S3 bucket
+        - S3WritePolicy:
+            BucketName: !Ref CSVUploadBucket
+      Environment:
+        Variables:
+          # Make bucket name accessible as environment variable
+          CSV_BUCKET: !Ref CSVUploadBucket
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /energy/upload
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
+
+##### Outputs #####
+
 Outputs:
   APIGatewayEndpoint:
     Description: API Gateway endpoint URL for Prod stage
@@ -554,7 +507,7 @@ Outputs:
   CSVUploadBucketName:
     Description: S3 Bucket for CSV file uploads
     Value: !Ref CSVUploadBucket
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+
 Globals:
   Function:
     LoggingConfig:

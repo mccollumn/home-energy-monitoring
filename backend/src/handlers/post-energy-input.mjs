@@ -48,7 +48,10 @@ function isValidDate(dateString, format) {
 }
 
 /**
- * A HTTP POST method to add energy input data to a Timestream table.
+ * Add energy input data to the Timestream table
+ * @param {Object} event - The event object containing information about the incoming request.
+ * @returns {Object} - An object containing the response status code, headers, and body.
+ * @throws {Error} When an error is encountered
  */
 export const postEnergyInputHandler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -126,7 +129,6 @@ export const postEnergyInputHandler = async (event) => {
 
   // Prepare and write data to Timestream
   try {
-    // Current time in milliseconds
     const currentTime = Date.now();
 
     // Prepare the Timestream records
