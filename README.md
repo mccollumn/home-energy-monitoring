@@ -29,7 +29,7 @@ sam deploy --guided
 - **Allow SAM CLI IAM role creation**: The AWS SAM template creates AWS IAM roles required for the AWS Lambda functions included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
 - **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
 
-The following outputs will be displayed in the outputs when the deployment is complete:
+The following outputs will be displayed when the deployment is complete:
 
 - API Gateway endpoint API
 - CloudFront Distribution ID

@@ -408,4 +408,4 @@ Copies an energy data file from a pre-signed S3 URL to the CSV upload bucket for
 
 - After the file is uploaded to the CSV upload bucket, it triggers the `process-csv` Lambda function that processes the file and stores the data in Timestream.
 - The CSV file should contain energy consumption data with date and usage columns.
-- Each user's files are stored in an S3 bucket with a filename in the foramt `userId-usage-timestamp.csv`.
+- Each user's files are stored in an S3 bucket with a filename in the format `userId-usage-timestamp.csv`.
