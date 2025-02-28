@@ -3,6 +3,10 @@
 // Create a DocumentClient that represents the query to add an item
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  TimestreamWriteClient,
+  WriteRecordsCommand,
+} from "@aws-sdk/client-timestream-write";
 import moment from "moment";
 
 //DynamoDB Endpoint
@@ -19,6 +23,16 @@ if (ENDPOINT_OVERRIDE) {
 }
 
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
+
+// Timestream client
+const timestreamClient = new TimestreamWriteClient({});
+
+// Get the Timestream database and table name from environment variables
+const timestreamDatabaseName = process.env.TIMESTREAM_DATABASE_NAME;
+const timestreamTableName = process.env.TIMESTREAM_TABLE_NAME;
+
+console.info("Using Timestream database: ", timestreamDatabaseName);
+console.info("Using Timestream table: ", timestreamTableName);
 
 // Get the DynamoDB table name from environment variables
 const tableName = process.env.TABLE;
@@ -60,7 +74,7 @@ export const postEnergyInputHandler = async (event) => {
   }
 
   // Extract the Cognito sub from the authorizer claims to use as ID
-  const cognitoSub = event.requestContext.authorizer.claims.sub;
+  const cognitoSub = event.requestContext.authorizer?.claims?.sub;
 
   // Creates a new item with energy usage data
   var params = {
@@ -72,10 +86,57 @@ export const postEnergyInputHandler = async (event) => {
   };
 
   try {
+    // Write to DynamoDB
     const data = await ddbDocClient.send(new PutCommand(params));
-    console.log("Success - energy data added", data);
+    console.log("Success - energy data added to DynamoDB", data);
+
+    // Prepare and write data to Timestream
+    try {
+      // Current time in milliseconds
+      const currentTime = Date.now();
+
+      // Prepare the Timestream records
+      const records = [
+        {
+          Dimensions: [
+            {
+              Name: "id",
+              Value: cognitoSub,
+            },
+            {
+              Name: "date",
+              Value: body.date,
+            },
+          ],
+          MeasureName: "energy_usage",
+          MeasureValue: body.usage.toString(),
+          MeasureValueType: "DOUBLE",
+          Time: currentTime.toString(),
+        },
+      ];
+
+      // Create the Timestream write command
+      const timestreamParams = {
+        DatabaseName: timestreamDatabaseName,
+        TableName: timestreamTableName,
+        Records: records,
+      };
+
+      // Write to Timestream
+      await timestreamClient.send(new WriteRecordsCommand(timestreamParams));
+      console.log("Success - energy usage data added to Timestream");
+    } catch (timestreamErr) {
+      console.error(
+        "Error adding energy usage data to Timestream:",
+        timestreamErr.message
+      );
+      console.error("Error code:", timestreamErr.code);
+      console.error("Error name:", timestreamErr.name);
+      console.error("Error stack:", timestreamErr.stack);
+      // Log error but don't fail the request if only Timestream write fails
+    }
   } catch (err) {
-    console.error("Error adding energy data:", err.message);
+    console.error("Error adding energy data to DynamoDB:", err.message);
     console.error("Error code:", err.code);
     console.error("Error name:", err.name);
     console.error("Error stack:", err.stack);
@@ -91,7 +152,7 @@ export const postEnergyInputHandler = async (event) => {
       "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
     },
     body: JSON.stringify({
-      id,
+      id: cognitoSub,
       ...body,
       message: "Energy data saved successfully",
     }),

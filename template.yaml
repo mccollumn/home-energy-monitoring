@@ -245,10 +245,19 @@ Resources:
         # Give Create/Read/Update/Delete Permissions to the Table
         - DynamoDBCrudPolicy:
             TableName: !Ref Table
+          # Give Write Permissions to Timestream
+        - Statement:
+            - Effect: Allow
+              Action:
+                - timestream:WriteRecords
+                - timestream:DescribeEndpoints
+              Resource: !GetAtt EnergyTimestreamTable.Arn
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE: !Ref Table
+          IMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
+          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
       Events:
         S3Event:
           Type: S3
@@ -263,8 +272,6 @@ Resources:
 
   # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
-
-  # DynamoDB table to store item: {id: <ID>, name: <NAME>}
   Table:
     Type: AWS::Serverless::SimpleTable
     Properties:
@@ -272,6 +279,23 @@ Resources:
       PrimaryKey:
         Name: id
         Type: String
+
+  # Timestream database for storing energy usage metrics
+  EnergyTimestreamDatabase:
+    Type: AWS::Timestream::Database
+    Properties:
+      DatabaseName: !Sub "${AWS::StackName}-EnergyUsageDB"
+
+  # Timestream table for storing daily energy usage by user ID
+  EnergyTimestreamTable:
+    Type: AWS::Timestream::Table
+    Properties:
+      DatabaseName: !Ref EnergyTimestreamDatabase
+      TableName: DailyEnergyUsage
+      # Adjust retention properties as needed based on performance vs cost requirements
+      RetentionProperties:
+        MemoryStoreRetentionPeriodInHours: "168"
+        MagneticStoreRetentionPeriodInDays: "365"
 
   # Lambda function config for energy input POST endpoint
   postEnergyInputFunction:
@@ -286,16 +310,25 @@ Resources:
       Timeout: 100
       Description:
         A Lambda function to handle POST requests for energy input data
-        and store it in a DynamoDB table.
+        and store it in DynamoDB and Timestream.
       Policies:
-        # Give Create/Read/Update/Delete Permissions to the Table
+        # Give Create/Read/Update/Delete Permissions to the DynamoDB Table
         - DynamoDBCrudPolicy:
             TableName: !Ref Table
+        # Give Write Permissions to Timestream
+        - Statement:
+            - Effect: Allow
+              Action:
+                - timestream:WriteRecords
+                - timestream:DescribeEndpoints
+              Resource: !GetAtt EnergyTimestreamTable.Arn
       Environment:
         Variables:
           TABLE: !Ref Table
           # Make DynamoDB endpoint accessible as environment variable from function code during execution
           ENDPOINT_OVERRIDE: ""
+          TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
+          TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
       Events:
         Api:
           Type: Api

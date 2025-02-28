@@ -1,7 +1,11 @@
 // Create clients and set shared const values outside of the handler.
 
 // Import required AWS SDK clients
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fetch from "node-fetch";
 
@@ -28,9 +32,9 @@ export const postEnergyUploadHandler = async (event) => {
     return {
       statusCode: 400,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ error: "Missing presignedUrl in request body" })
+      body: JSON.stringify({ error: "Missing presignedUrl in request body" }),
     };
   }
 
@@ -38,16 +42,22 @@ export const postEnergyUploadHandler = async (event) => {
     // Fetch the content from the pre-signed URL
     console.info("Fetching file from pre-signed URL");
     const response = await fetch(presignedUrl);
-    
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch file from pre-signed URL: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch file from pre-signed URL: ${response.statusText}`
+      );
     }
-    
+
     // Get the file content as buffer
     const fileContent = await response.buffer();
 
-    // Extract the filename from the URL (or generate a unique one)
-    const fileName = new URL(presignedUrl).pathname.split('/').pop() || `upload-${Date.now()}.csv`;
+    // Extract the user ID from the request context
+    const userId = event.requestContext.authorizer?.claims?.sub;
+
+    // Set fileName based on the user ID with the format userId-usage-date.csv
+    // processCSVFunction expects the file name to be in this format
+    const fileName = `${userId}-usage-${Date.now()}.csv`;
 
     // Upload the file to the CSVUploadBucket
     console.info(`Uploading file ${fileName} to ${csvBucket}`);
@@ -55,7 +65,7 @@ export const postEnergyUploadHandler = async (event) => {
       Bucket: csvBucket,
       Key: fileName,
       Body: fileContent,
-      ContentType: response.headers.get('content-type') || 'text/csv'
+      ContentType: response.headers.get("content-type") || "text/csv",
     });
 
     await s3Client.send(putCommand);
@@ -64,21 +74,21 @@ export const postEnergyUploadHandler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: "File successfully copied to CSVUploadBucket",
-        fileName: fileName
-      })
+        fileName: fileName,
+      }),
     };
   } catch (error) {
     console.error("Error copying file:", error);
     return {
       statusCode: 500,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };

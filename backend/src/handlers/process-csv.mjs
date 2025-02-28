@@ -4,6 +4,10 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  TimestreamWriteClient,
+  WriteRecordsCommand,
+} from "@aws-sdk/client-timestream-write";
 import { Readable } from "stream";
 
 // Initialize S3 client
@@ -15,6 +19,16 @@ const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
 // Get the DynamoDB table name from environment variables
 const tableName = process.env.TABLE;
+
+// Timestream client
+const timestreamClient = new TimestreamWriteClient({});
+
+// Get the Timestream database and table name from environment variables
+const timestreamDatabaseName = process.env.TIMESTREAM_DATABASE_NAME;
+const timestreamTableName = process.env.TIMESTREAM_TABLE_NAME;
+
+console.info("Using Timestream database: ", timestreamDatabaseName);
+console.info("Using Timestream table: ", timestreamTableName);
 
 // Helper function to convert S3 object stream to string
 const streamToString = async (stream) => {
@@ -73,8 +87,17 @@ export const processCSVHandler = async (event) => {
 
     // Add an ID to each item and store in DynamoDB
     for (const item of items) {
-      // Generate a unique ID
-      item.id = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      // Extract user ID from file metadata or S3 event
+      // Since the user ID isn't in the key, extract it from the filename itself
+      // Assuming filenames follow pattern: userId_filename.csv or userId-filename.csv
+      let userId = "unknown";
+      const fileNameMatch = key.match(/^([^_\-]+)[_\-]/);
+      if (fileNameMatch && fileNameMatch.length > 1) {
+        userId = fileNameMatch[1];
+      }
+
+      // Set the user ID as the item ID
+      item.id = userId;
 
       // Save to DynamoDB
       const params = {
@@ -84,6 +107,52 @@ export const processCSVHandler = async (event) => {
 
       await ddbDocClient.send(new PutCommand(params));
       console.info(`Saved item with id ${item.id} to DynamoDB`);
+
+      // Prepare and write data to Timestream
+      try {
+        // Current time in milliseconds
+        const currentTime = Date.now();
+
+        // Prepare the Timestream records
+        const records = [
+          {
+            Dimensions: [
+              {
+                Name: "id",
+                Value: cognitoSub,
+              },
+              {
+                Name: "date",
+                Value: body.date,
+              },
+            ],
+            MeasureName: "energy_usage",
+            MeasureValue: body.usage.toString(),
+            MeasureValueType: "DOUBLE",
+            Time: currentTime.toString(),
+          },
+        ];
+
+        // Create the Timestream write command
+        const timestreamParams = {
+          DatabaseName: timestreamDatabaseName,
+          TableName: timestreamTableName,
+          Records: records,
+        };
+
+        // Write to Timestream
+        await timestreamClient.send(new WriteRecordsCommand(timestreamParams));
+        console.log("Success - energy usage data added to Timestream");
+      } catch (timestreamErr) {
+        console.error(
+          "Error adding energy usage data to Timestream:",
+          timestreamErr.message
+        );
+        console.error("Error code:", timestreamErr.code);
+        console.error("Error name:", timestreamErr.name);
+        console.error("Error stack:", timestreamErr.stack);
+        // Log error but don't fail the request if only Timestream write fails
+      }
     }
 
     console.info(`Successfully processed ${items.length} items from ${key}`);
