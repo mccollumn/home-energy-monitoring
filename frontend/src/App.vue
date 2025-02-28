@@ -1,19 +1,14 @@
 <template>
-  <div>
-      <div id="logo">
-        <img :src="'./logo.png'" />
-      </div>
-  </div>
-  <h2>Hi, I Am SAM</h2>
-  <hr />  
-  <h3>Create User</h3>
-  <CreateItem class="form-section"/>
-  <hr />  
-  <h3>Get User By ID</h3>
-  <GetItemById class="form-section"/>
-  <hr />    
-  <h3>Get All Users</h3>
-  <GetItems class="form-section"/>
+  <h2>Home Energy Monitoing</h2>
+  <hr />
+  <h3>Submit Usage</h3>
+  <CreateItem class="form-section" />
+  <hr />
+  <h3>Get Usage By User ID</h3>
+  <GetItemById class="form-section" />
+  <hr />
+  <h3>Get All Usage</h3>
+  <GetItems class="form-section" />
 </template>
 
 <script>
@@ -41,11 +36,11 @@ export default {
 }
 
 #logo {
-    display: flex;
-    width: 15%;
-    flex-direction: column;
-    justify-content: center;
-    margin: auto;
+  display: flex;
+  width: 15%;
+  flex-direction: column;
+  justify-content: center;
+  margin: auto;
 }
 
 .form-section {
@@ -67,5 +62,4 @@ input {
 label {
   margin: 1%;
 }
-
 </style>

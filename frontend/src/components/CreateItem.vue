@@ -2,18 +2,18 @@
   <div>
     <form @submit.prevent="createItem">
       <div>
-        <label for="userId">User ID </label>
-        <input type="text" id="userId" v-model="formData.id" />
+        <label for="userId">Date </label>
+        <input type="text" id="userId" v-model="formData.date" />
       </div>
       <div>
-        <label for="userName">User Name</label>
-        <input type="text" id="userName" v-model="formData.name" />
-      </div>      
+        <label for="userName">Usage (kWh)</label>
+        <input type="text" id="userName" v-model="formData.usage" />
+      </div>
       <div>
-        <button>Create User</button>
+        <button>Submit Usage</button>
       </div>
     </form>
-    <h3 v-if="response"> User created</h3>
+    <h3 v-if="response">Submitted</h3>
     <h3 class="error" v-if="errorMsg">{{ errorMsg }}</h3>
   </div>
 </template>
@@ -25,8 +25,8 @@ export default {
   data() {
     return {
       formData: {
-        id: '',
-        name: '',
+        date: '',
+        usage: '',
       },
       errorMsg: '',
       response: '',
@@ -49,6 +49,4 @@ export default {
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

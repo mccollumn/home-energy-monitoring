@@ -1,8 +1,8 @@
 <template>
   <div>
-    <button @click="getItems">Get User</button>
-    <div v-for="user in users" :key="user.id">      
-      <h4>{{ user.id }} || {{ user.name }}</h4>            
+    <button @click="getItems">Get All Usage</button>
+    <div v-for="user in users" :key="user.id">
+      <h4>{{ user.id }} || {{ user.name }}</h4>
     </div>
     <h3 class="error" v-if="errorMsg">{{ errorMsg }}</h3>
   </div>
@@ -13,7 +13,7 @@ import axios from 'axios'
 
 export default {
   name: 'GetItems',
-  
+
   data() {
     return {
       users: [],
@@ -37,6 +37,4 @@ export default {
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
