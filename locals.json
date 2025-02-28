@@ -1,19 +1,27 @@
 {
   "getAllItemsFunction": {
     "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
-    "TABLE": "Users"
+    "TABLE": "EnergyUsageDB"
   },
   "getByIdFunction": {
     "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
-    "TABLE": "Users"
+    "TABLE": "EnergyUsageDB"
   },
   "postItemFunction": {
     "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
-    "TABLE": "Users"
+    "TABLE": "EnergyUsageDB"
   },
   "postEnergyInputFunction": {
     "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
-    "TABLE": "Users"
+    "TABLE": "EnergyUsageDB"
+  },
+  "GetEnergyHistoryFunction": {
+    "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
+    "TABLE": "EnergyUsageDB"
+  },
+  "updateThresholdFunction": {
+    "ENDPOINT_OVERRIDE": "http://172.17.0.2:8000",
+    "TABLE": "EnergyUsageDB"
   },
   "SignupFunction": {
     "USER_POOL_ID": "XXXXXXXXXXXXXXXXXXX",

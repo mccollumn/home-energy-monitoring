@@ -1,6 +1,6 @@
 {
   "httpMethod": "GET",
   "pathParameters": {
-    "id": "A1234"
+    "id": "testuser"
   }
 }

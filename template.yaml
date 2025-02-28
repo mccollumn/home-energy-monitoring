@@ -277,6 +277,36 @@ Resources:
                   - Name: suffix
                     Value: .csv
 
+  GetEnergyHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers/get-energy-history.getEnergyHistoryHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple function that retrieves energy usage history for a date range
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE: !Ref Table
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /energy/history
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   # DynamoDB table for storing energy usage data
   Table:
     Type: AWS::DynamoDB::Table
@@ -291,15 +321,8 @@ Resources:
       KeySchema:
         - AttributeName: id
           KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: UserDateIndex
-          KeySchema:
-            - AttributeName: id
-              KeyType: HASH
-            - AttributeName: date
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
+        - AttributeName: date
+          KeyType: RANGE
 
   # Timestream database for storing energy usage metrics
   EnergyTimestreamDatabase:

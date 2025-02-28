@@ -166,8 +166,8 @@ sam local start-api --env-vars locals.json --host 0.0.0.0 --debug
 
 ```
 aws dynamodb put-item \
-    --table-name SampleTable \
-    --item '{"id": {"S": "A1234"}, "name": {"S": "randeepx"}}' \
+    --table-name EnergyUsageDB \
+    --item '{"id": {"S": "testuser"}, "threshold": {"N": "30"}}' \
     --endpoint-url http://127.0.0.1:8000
 ```
 

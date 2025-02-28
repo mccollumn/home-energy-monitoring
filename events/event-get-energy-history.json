@@ -1,0 +1,14 @@
+{
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "startDate": "2024-06-01",
+    "endDate": "2024-06-02"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "testuser"
+      }
+    }
+  }
+}
