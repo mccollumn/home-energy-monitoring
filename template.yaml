@@ -252,12 +252,19 @@ Resources:
                 - timestream:WriteRecords
                 - timestream:DescribeEndpoints
               Resource: !GetAtt EnergyTimestreamTable.Arn
+          # Give Publish Permissions to SNS
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref ThresholdNotificationTopic
       Environment:
         Variables:
           # Make table name accessible as environment variable from function code during execution
           TABLE: !Ref Table
           IMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
           TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
+          SNS_TOPIC_ARN: !Ref ThresholdNotificationTopic
       Events:
         S3Event:
           Type: S3
@@ -311,6 +318,13 @@ Resources:
         MemoryStoreRetentionPeriodInHours: "168"
         MagneticStoreRetentionPeriodInDays: "365"
 
+  # SNS Topic for threshold notifications
+  ThresholdNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-ThresholdNotifications"
+      DisplayName: "Energy Usage Threshold Notifications"
+
   # Lambda function config for energy input POST endpoint
   postEnergyInputFunction:
     Type: AWS::Serverless::Function
@@ -336,6 +350,12 @@ Resources:
                 - timestream:WriteRecords
                 - timestream:DescribeEndpoints
               Resource: !GetAtt EnergyTimestreamTable.Arn
+        # Give Publish Permissions to SNS
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref ThresholdNotificationTopic
       Environment:
         Variables:
           TABLE: !Ref Table
@@ -343,6 +363,7 @@ Resources:
           ENDPOINT_OVERRIDE: ""
           TIMESTREAM_DATABASE_NAME: !Ref EnergyTimestreamDatabase
           TIMESTREAM_TABLE_NAME: !Ref EnergyTimestreamTable
+          SNS_TOPIC_ARN: !Ref ThresholdNotificationTopic
       Events:
         Api:
           Type: Api

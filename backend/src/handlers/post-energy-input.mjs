@@ -2,11 +2,16 @@
 
 // Create a DocumentClient that represents the query to add an item
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  GetCommand,
+} from "@aws-sdk/lib-dynamodb";
 import {
   TimestreamWriteClient,
   WriteRecordsCommand,
 } from "@aws-sdk/client-timestream-write";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import moment from "moment";
 
 //DynamoDB Endpoint
@@ -26,6 +31,12 @@ const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
 // Timestream client
 const timestreamClient = new TimestreamWriteClient({});
+
+// SNS client
+const snsClient = new SNSClient({});
+
+// Get the SNS topic ARN from environment variables
+const snsTopicArn = process.env.SNS_TOPIC_ARN;
 
 // Get the Timestream database and table name from environment variables
 const timestreamDatabaseName = process.env.TIMESTREAM_DATABASE_NAME;
@@ -89,6 +100,55 @@ export const postEnergyInputHandler = async (event) => {
     // Write to DynamoDB
     const data = await ddbDocClient.send(new PutCommand(params));
     console.log("Success - energy data added to DynamoDB", data);
+
+    // Check if the user has a threshold set and compare with current usage
+    try {
+      // Get the user's threshold from DynamoDB
+      const getUserParams = {
+        TableName: tableName,
+        Key: { id: cognitoSub },
+        ProjectionExpression: "threshold",
+      };
+
+      const userResult = await ddbDocClient.send(new GetCommand(getUserParams));
+      console.log("User data retrieved:", userResult);
+
+      // If the user has a threshold set and the current usage exceeds it, send an SNS notification
+      if (
+        userResult.Item &&
+        userResult.Item.threshold &&
+        parseFloat(body.usage) > parseFloat(userResult.Item.threshold)
+      ) {
+        console.log("Energy usage exceeds threshold, sending notification");
+
+        // Create the SNS message
+        const message = {
+          userId: cognitoSub,
+          date: body.date,
+          usage: body.usage,
+          threshold: userResult.Item.threshold,
+          message: `Energy usage alert: Your energy usage of ${body.usage} kWh on ${body.date} exceeds your threshold of ${userResult.Item.threshold} kWh.`,
+        };
+
+        // Publish the message to SNS
+        const snsParams = {
+          TopicArn: snsTopicArn,
+          Message: JSON.stringify(message),
+          Subject: "Energy Usage Threshold Exceeded",
+        };
+
+        await snsClient.send(new PublishCommand(snsParams));
+        console.log("SNS notification sent successfully");
+      } else {
+        console.log("Energy usage is within threshold or no threshold set");
+      }
+    } catch (thresholdErr) {
+      console.error(
+        "Error checking threshold or sending notification:",
+        thresholdErr
+      );
+      // Continue with the flow, don't fail the request if threshold check fails
+    }
 
     // Prepare and write data to Timestream
     try {
