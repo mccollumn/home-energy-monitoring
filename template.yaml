@@ -270,15 +270,29 @@ Resources:
                   - Name: suffix
                     Value: .csv
 
-  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+  # DynamoDB table for storing energy usage data
   Table:
-    Type: AWS::Serverless::SimpleTable
+    Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "${AWS::StackName}-users"
-      PrimaryKey:
-        Name: id
-        Type: String
+      TableName: !Sub "${AWS::StackName}-EnergyUsageDB"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserDateIndex
+          KeySchema:
+            - AttributeName: id
+              KeyType: HASH
+            - AttributeName: date
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
 
   # Timestream database for storing energy usage metrics
   EnergyTimestreamDatabase:
