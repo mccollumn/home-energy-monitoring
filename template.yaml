@@ -263,7 +263,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /
+            Path: /items
             Method: GET
             RestApiId:
               Ref: ApiGatewayApi
@@ -292,7 +292,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /{id}
+            Path: /items/{id}
             Method: GET
             RestApiId:
               Ref: ApiGatewayApi

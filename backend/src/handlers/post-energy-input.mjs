@@ -169,7 +169,16 @@ export const postEnergyInputHandler = async (event) => {
     console.error("Error code:", timestreamErr.code);
     console.error("Error name:", timestreamErr.name);
     console.error("Error stack:", timestreamErr.stack);
-    throw timestreamErr;
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "Error saving energy history data",
+        error: timestreamErr.message,
+      }),
+    };
   }
 
   const response = {
@@ -180,8 +189,8 @@ export const postEnergyInputHandler = async (event) => {
       "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
     },
     body: JSON.stringify({
-      id: cognitoSub,
-      ...body,
+      // id: cognitoSub,
+      // ...body,
       message: "Energy data saved successfully",
     }),
   };

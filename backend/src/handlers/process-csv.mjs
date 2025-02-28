@@ -199,7 +199,16 @@ export const processCSVHandler = async (event) => {
         console.error("Error name:", timestreamErr.name);
         console.error("Error stack:", timestreamErr.stack);
 
-        throw timestreamErr;
+        return {
+          statusCode: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: "Error saving energy history data",
+            error: error.message,
+          }),
+        };
       }
     }
 

@@ -83,7 +83,10 @@ export const postEnergyUploadHandler = async (event) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({
+        message: "Error uploading energy history data",
+        error: error.message,
+      }),
     };
   }
 };

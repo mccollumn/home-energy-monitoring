@@ -117,7 +117,7 @@ export const getEnergyHistoryHandler = async (event) => {
         // Format the item to match the expected structure
         // Ensure we have an object with date, and usage properties
         const formattedItem = {
-          date: item.date,
+          date: moment(item.date).format("YYYY-MM-DD"),
           usage: parseFloat(item.usage),
         };
 
